@@ -8,13 +8,26 @@ The White Agent is an A2A (Agent-to-Agent) compatible system that performs compr
 
 ### Key Features
 
-- **Automated Data Analysis**: Processes CSV, JSON, Parquet, and Excel data files
-- **Comprehensive Statistics**: Calculates ATE, p-values, confidence intervals, effect sizes, and regression models
-- **Covariate Balance Checking**: Verifies randomization quality
-- **LLM-Powered Reports**: Uses Gemini API to generate detailed analysis reports
-- **Reproducible Code**: Automatically generates Python code to reproduce analyses
-- **A2A Compatible**: Integrates with AgentBeats platform for multi-agent workflows
-- **Version Control**: Maintains multiple analysis versions for the same dataset
+- **🤖 LLM-Powered Analysis Mode (NEW!)**: Robust end-to-end analysis that adapts to any data format
+- **📊 Automated Data Analysis**: Processes CSV, JSON, Parquet, Excel, and more
+- **🔬 Comprehensive Statistics**: Calculates ATE, p-values, confidence intervals, effect sizes, and regression models
+- **⚖️ Covariate Balance Checking**: Verifies randomization quality
+- **📝 LLM-Powered Reports**: Uses Gemini API to generate detailed analysis reports
+- **🔄 Reproducible Code**: Automatically generates Python code to reproduce analyses
+- **🔗 A2A Compatible**: Integrates with AgentBeats platform for multi-agent workflows
+- **📁 Version Control**: Maintains multiple analysis versions for the same dataset
+
+### 🆕 LLM-Powered Mode
+
+The agent now includes an **intelligent LLM-powered mode** that can:
+
+- ✅ Work with **any data format** without preprocessing
+- ✅ Handle **inconsistent variable naming** and structures
+- ✅ **Automatically identify** treatment, outcome, and covariate variables
+- ✅ **Adapt statistical methods** to your specific experiment type
+- ✅ Provide **context-aware interpretations** and recommendations
+
+**[📖 Learn more about LLM-powered analysis →](docs/LLM_POWERED_ANALYSIS.md)**
 
 ## Installation
 
@@ -82,12 +95,15 @@ agent-hypo/
 
 ## Usage
 
-### Quick Start (Recommended)
+### Quick Start with LLM-Powered Mode (Recommended)
 
-Run analysis on the latest test or a specific test:
+The easiest way to use the enhanced LLM-powered analysis:
 
 ```bash
-# Analyze the latest test automatically
+# Set your Gemini API key
+export GEMINI_API_KEY="your-gemini-api-key"
+
+# Analyze the latest test automatically (uses LLM mode if API key is set)
 python main.py
 
 # Analyze a specific test
@@ -96,6 +112,28 @@ python main.py --test-index 1
 # List available tests
 python main.py --list
 ```
+
+**Without API key**: The agent automatically falls back to traditional analysis mode.
+
+### Programmatic Usage
+
+```python
+from white_agent.unified_agent import UnifiedWhiteAgent
+
+# Auto-detects LLM mode if GEMINI_API_KEY is set
+agent = UnifiedWhiteAgent(
+    inputs_dir="inputs",
+    results_dir="results"
+)
+
+# Process a test
+results = agent.process_test(test_index=1)
+
+# Check which mode was used
+print(f"Using LLM mode: {agent.is_llm_powered}")
+```
+
+See [examples/llm_mode_example.py](examples/llm_mode_example.py) for more examples.
 
 ### Standalone Mode (Interactive)
 

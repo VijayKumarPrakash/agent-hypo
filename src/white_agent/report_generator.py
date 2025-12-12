@@ -106,7 +106,92 @@ class ReportGenerator:
         Returns:
             Formatted prompt string
         """
-        prompt = f"""You are an expert statistician and data scientist tasked with writing a comprehensive analysis report for a randomized controlled trial (RCT) or A/B test.
+        # Check if this is LLM-analyzed data (has analysis_plan)
+        has_llm_analysis = "analysis_plan" in results
+
+        if has_llm_analysis:
+            # Enhanced prompt for LLM-analyzed data
+            analysis_plan = results.get("analysis_plan", {})
+            experiment_type = analysis_plan.get("experiment_type", "experiment")
+
+            prompt = f"""You are an expert statistician and data scientist tasked with writing a comprehensive analysis report for a {experiment_type}.
+
+# EXPERIMENT CONTEXT
+{context}
+
+# ANALYSIS APPROACH
+The data was analyzed using an intelligent LLM-guided approach that:
+- Automatically identified variables and their roles
+- Determined appropriate statistical methods based on data structure
+- Adapted to the specific experimental design
+
+# ANALYSIS PLAN USED
+{json.dumps(analysis_plan, indent=2)}
+
+# STATISTICAL ANALYSIS RESULTS
+{json.dumps(results, indent=2)}
+
+# TASK
+Write a thorough, professional analysis report in markdown format. The report should include:
+
+1. **Executive Summary**: Key findings in 2-3 sentences for stakeholders
+
+2. **Experiment Overview**:
+   - Research question and objectives (from context)
+   - Study design ({experiment_type})
+   - Sample size and composition
+   - Treatment and control group descriptions
+   - How variables were identified and validated
+
+3. **Data Quality Assessment**:
+   - Sample size adequacy
+   - Balance between treatment and control groups
+   - Any potential data quality issues identified by the analysis
+   - Missing data or outliers
+   - Data structure and format considerations
+
+4. **Statistical Findings**:
+   - Average Treatment Effect (ATE) with confidence intervals
+   - Statistical significance (p-values, test statistics)
+   - Effect size interpretation (Cohen's d)
+   - Regression results if applicable
+   - All relevant statistical tests performed
+   - Covariate balance results
+
+5. **Interpretation**:
+   - What do the results mean in practical terms?
+   - Is the treatment effective?
+   - How confident can we be in these results?
+   - Context-specific implications
+
+6. **Threats to Validity**:
+   - Possible confounders
+   - Treatment design considerations
+   - Selection bias concerns
+   - External validity considerations
+   - Any violations of assumptions
+   - Data quality or measurement issues
+
+7. **Recommendations**:
+   - Based on the findings, what actions should be taken?
+   - Suggestions for improving the study design
+   - Ideas for future experiments
+   - Caveats and limitations
+   - Data collection improvements
+
+8. **Technical Details**:
+   - Statistical methods used and why they were chosen
+   - Assumptions made
+   - Variable identification approach
+   - How the analysis adapted to this specific dataset
+
+Format the report in clean markdown with clear sections, subsections, tables where appropriate, and professional academic/industry style. Be thorough but concise. Include specific numbers and statistics throughout.
+
+IMPORTANT: This analysis was performed by an adaptive system that works with various data formats and structures. Mention this capability and how it handled this specific dataset.
+"""
+        else:
+            # Original prompt for backward compatibility
+            prompt = f"""You are an expert statistician and data scientist tasked with writing a comprehensive analysis report for a randomized controlled trial (RCT) or A/B test.
 
 # EXPERIMENT CONTEXT
 {context}
@@ -163,6 +248,7 @@ Write a thorough, professional analysis report in markdown format. The report sh
 
 Format the report in clean markdown with clear sections, subsections, tables where appropriate, and professional academic/industry style. Be thorough but concise. Include specific numbers and statistics throughout.
 """
+
         return prompt
 
     def _generate_template_report(self, context: str, results: Dict[str, Any]) -> str:
