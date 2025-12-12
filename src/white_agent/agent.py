@@ -9,7 +9,7 @@ import logging
 from .data_loader import DataLoader
 from .analyzer import RCTAnalyzer
 from .report_generator import ReportGenerator
-from .utils import get_next_result_version, ensure_directory_structure
+from .utils import get_next_result_version, ensure_directory_structure, identify_context_file
 
 
 logging.basicConfig(level=logging.INFO)
@@ -93,6 +93,9 @@ class WhiteAgent:
         data_output_dir = result_dir / "data_source"
         self._copy_data_source(data_file_path, data_output_dir)
 
+        # Copy context file to output
+        context_file_path = self._copy_context_file(test_dir, data_output_dir)
+
         # Step 4: Perform statistical analysis
         logger.info("Performing statistical analysis")
         analysis_results = self.analyzer.analyze(data_df, context)
@@ -122,6 +125,7 @@ class WhiteAgent:
             "input_dir": str(test_dir),
             "output_dir": str(result_dir),
             "data_file": data_file_path.name,
+            "context_file": context_file_path.name,
             "analysis_summary": {
                 "sample_size": len(data_df),
                 "treatment_effect": analysis_results.get("average_treatment_effect"),
@@ -145,6 +149,27 @@ class WhiteAgent:
         dest_path = dest_dir / source_path.name
         shutil.copy2(source_path, dest_path)
         logger.info(f"Copied data source to {dest_path}")
+
+    def _copy_context_file(self, test_dir: Path, dest_dir: Path) -> Path:
+        """Copy context file to output directory.
+
+        Args:
+            test_dir: Source test directory containing context file
+            dest_dir: Destination data_source directory
+
+        Returns:
+            Path to the copied context file
+        """
+        import shutil
+
+        # Identify and copy context file
+        context_path = identify_context_file(test_dir)
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        dest_path = dest_dir / context_path.name
+        shutil.copy2(context_path, dest_path)
+
+        logger.info(f"Copied context file to {dest_path}")
+        return dest_path
 
     def _generate_analysis_code(
         self,

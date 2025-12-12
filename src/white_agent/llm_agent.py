@@ -13,7 +13,7 @@ import logging
 from .llm_data_loader import LLMDataLoader
 from .llm_analyzer import LLMAnalyzer
 from .report_generator import ReportGenerator
-from .utils import get_next_result_version, ensure_directory_structure
+from .utils import get_next_result_version, ensure_directory_structure, identify_context_file
 
 
 logging.basicConfig(level=logging.INFO)
@@ -122,6 +122,9 @@ class LLMWhiteAgent:
         data_output_dir = result_dir / "data_source"
         self._copy_data_source(data_file_path, data_output_dir)
 
+        # Copy context file to output
+        context_file_path = self._copy_context_file(test_dir, data_output_dir)
+
         # Step 4: Perform LLM-guided statistical analysis
         logger.info("Performing LLM-guided statistical analysis")
         analysis_results = self.analyzer.analyze_experiment(
@@ -150,7 +153,7 @@ class LLMWhiteAgent:
         # Step 7: Save metadata
         metadata = self._create_metadata(
             test_index, result_version, test_dir, result_dir,
-            data_file_path, data_df, analysis_results
+            data_file_path, context_file_path, data_df, analysis_results
         )
 
         metadata_path = result_dir / "metadata.json"
@@ -168,6 +171,27 @@ class LLMWhiteAgent:
         dest_path = dest_dir / source_path.name
         shutil.copy2(source_path, dest_path)
         logger.info(f"Copied data source to {dest_path}")
+
+    def _copy_context_file(self, test_dir: Path, dest_dir: Path) -> Path:
+        """Copy context file to output directory.
+
+        Args:
+            test_dir: Source test directory containing context file
+            dest_dir: Destination data_source directory
+
+        Returns:
+            Path to the copied context file
+        """
+        import shutil
+
+        # Identify and copy context file
+        context_path = identify_context_file(test_dir)
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        dest_path = dest_dir / context_path.name
+        shutil.copy2(context_path, dest_path)
+
+        logger.info(f"Copied context file to {dest_path}")
+        return dest_path
 
     def _generate_analysis_code(
         self,
@@ -313,6 +337,7 @@ openpyxl>=3.1.0
         test_dir: Path,
         result_dir: Path,
         data_file_path: Path,
+        context_file_path: Path,
         data_df,
         analysis_results: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -331,6 +356,7 @@ openpyxl>=3.1.0
             "input_dir": str(test_dir),
             "output_dir": str(result_dir),
             "data_file": data_file_path.name,
+            "context_file": context_file_path.name,
             "analysis_type": "llm_powered",
             "experiment_type": analysis_plan.get("experiment_type"),
             "data_shape": {
