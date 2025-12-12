@@ -1,0 +1,28 @@
+# White Agent - RCT Analysis Dependencies
+
+# Core data processing
+pandas>=2.0.0
+numpy>=1.24.0
+scipy>=1.10.0
+scikit-learn>=1.3.0
+
+# Data format support
+pyarrow>=12.0.0          # For Parquet files
+openpyxl>=3.1.0          # For Excel files
+
+# LLM integration
+google-generativeai>=0.3.0
+
+# Environment variable management
+python-dotenv>=1.0.0
+
+# Web server for A2A protocol (optional, for production deployment)
+fastapi>=0.104.0
+uvicorn>=0.24.0
+
+# Development and testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+black>=23.0.0
+flake8>=6.1.0
+mypy>=1.6.0

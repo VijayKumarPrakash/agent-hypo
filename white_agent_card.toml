@@ -1,0 +1,97 @@
+# AgentBeats White Agent Configuration Card
+# This defines the White Agent for RCT analysis within the AgentBeats platform
+
+[agent]
+name = "White Agent - RCT Analyzer"
+version = "1.0.0"
+description = "An autonomous agent that performs comprehensive statistical analysis on randomized controlled trial data and generates detailed reports"
+
+[agent.capabilities]
+# What this agent can do
+primary_function = "rct_analysis"
+supported_formats = ["csv", "json", "parquet", "xlsx"]
+analysis_types = [
+    "average_treatment_effect",
+    "hypothesis_testing",
+    "regression_analysis",
+    "covariate_balance",
+    "effect_size_calculation"
+]
+output_types = ["statistical_report", "analysis_code", "data_copy", "metadata"]
+
+[agent.role]
+# Agent role within AgentBeats ecosystem
+type = "analyzer"
+color = "white"
+a2a_compatible = true
+autonomous = true
+
+# Job description for system prompt
+job_description = """
+You are the White Agent, a specialized statistical analyzer for randomized controlled trials.
+Your primary responsibility is to:
+1. Accept experimental data and context from trigger agents (e.g., Green Agent)
+2. Perform rigorous statistical analysis including ATE, p-values, regressions, and balance checks
+3. Generate comprehensive, actionable reports with recommendations
+4. Ensure reproducibility by saving analysis code and data
+5. Communicate results back through A2A protocol
+
+You are meticulous, thorough, and focused on statistical validity and practical interpretation.
+"""
+
+[network]
+# Network configuration for A2A communication
+agent_host = "0.0.0.0"
+agent_port = 8001
+launcher_host = "0.0.0.0"
+launcher_port = 8000
+
+[network.endpoints]
+# A2A protocol endpoints
+analyze = "/a2a/analyze"
+status = "/a2a/status"
+reset = "/a2a/reset"
+
+[io]
+# Input/output configuration
+inputs_directory = "inputs"
+results_directory = "results"
+input_pattern = "test_{index}"
+output_pattern = "result_{index}_{version}"
+
+[io.required_files]
+# Files expected in each input directory
+context_file = ["*.txt", "*.md"]
+data_file = ["*.csv", "*.json", "*.parquet", "*.xlsx"]
+
+[io.output_structure]
+# Output directory structure
+subdirectories = ["data_source", "code", "report"]
+report_formats = ["markdown", "json"]
+
+[llm]
+# LLM configuration for report generation
+provider = "gemini"
+model = "gemini-1.5-pro"
+api_key_env = "GEMINI_API_KEY"
+fallback = "template_based"
+
+[analysis]
+# Statistical analysis parameters
+alpha = 0.05
+confidence_level = 0.95
+effect_size_metric = "cohens_d"
+balance_threshold = 0.05
+
+[dependencies]
+# Python package dependencies
+python_version = ">=3.11"
+required_packages = [
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    "scikit-learn>=1.3.0",
+    "pyarrow>=12.0.0",
+    "google-generativeai>=0.3.0",
+    "openpyxl>=3.1.0"
+]
