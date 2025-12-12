@@ -25,7 +25,7 @@ except ImportError:
 # Add parent directory to path to import white_agent
 sys.path.insert(0, str(Path(__file__).parent))
 
-from white_agent import WhiteAgent
+from white_agent.unified_agent import UnifiedWhiteAgent
 
 
 logging.basicConfig(
@@ -36,7 +36,11 @@ logger = logging.getLogger(__name__)
 
 
 class WhiteAgentLauncher:
-    """Launcher for White Agent with A2A protocol support."""
+    """Launcher for White Agent with A2A protocol support.
+
+    Automatically uses LLM-powered mode when GEMINI_API_KEY is available,
+    or falls back to traditional mode otherwise.
+    """
 
     def __init__(
         self,
@@ -45,7 +49,8 @@ class WhiteAgentLauncher:
         agent_host: str = "0.0.0.0",
         agent_port: int = 8001,
         launcher_host: str = "0.0.0.0",
-        launcher_port: int = 8000
+        launcher_port: int = 8000,
+        force_mode: str = None
     ):
         """Initialize the launcher.
 
@@ -56,6 +61,7 @@ class WhiteAgentLauncher:
             agent_port: Port for A2A agent communication
             launcher_host: Host for launcher control
             launcher_port: Port for launcher control
+            force_mode: Force specific analysis mode ('llm', 'traditional', or None for auto)
         """
         self.inputs_dir = inputs_dir
         self.results_dir = results_dir
@@ -64,13 +70,15 @@ class WhiteAgentLauncher:
         self.launcher_host = launcher_host
         self.launcher_port = launcher_port
 
-        # Initialize the White Agent
-        self.agent = WhiteAgent(
+        # Initialize the White Agent with UnifiedWhiteAgent (auto-detects mode)
+        self.agent = UnifiedWhiteAgent(
             inputs_dir=inputs_dir,
-            results_dir=results_dir
+            results_dir=results_dir,
+            force_mode=force_mode
         )
 
-        logger.info(f"White Agent Launcher initialized")
+        mode_type = "LLM-powered" if self.agent.is_llm_powered else "Traditional"
+        logger.info(f"White Agent Launcher initialized in {mode_type} mode")
         logger.info(f"Agent endpoint: {agent_host}:{agent_port}")
         logger.info(f"Launcher endpoint: {launcher_host}:{launcher_port}")
 
@@ -258,7 +266,17 @@ def main():
         help="Run mode: server (A2A protocol) or standalone (interactive)"
     )
 
+    parser.add_argument(
+        "--analysis-mode",
+        choices=["auto", "llm", "traditional"],
+        default="auto",
+        help="Analysis mode: 'auto' (default, auto-detect), 'llm' (force LLM), or 'traditional' (force traditional)"
+    )
+
     args = parser.parse_args()
+
+    # Determine force mode
+    force_mode = None if args.analysis_mode == "auto" else args.analysis_mode
 
     launcher = WhiteAgentLauncher(
         inputs_dir=args.inputs_dir,
@@ -266,7 +284,8 @@ def main():
         agent_host=args.agent_host,
         agent_port=args.agent_port,
         launcher_host=args.launcher_host,
-        launcher_port=args.launcher_port
+        launcher_port=args.launcher_port,
+        force_mode=force_mode
     )
 
     if args.mode == "server":
