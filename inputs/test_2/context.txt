@@ -1,0 +1,46 @@
+EXPERIMENT: Project Hermes - AI-Assisted Drafting Efficiency
+DATE CONDUCTED: November 1, 2025 - November 14, 2025
+PRINCIPAL INVESTIGATOR: Dr. Aris Thorne, UX Research Div.
+
+1. OVERVIEW
+This experiment was conducted to evaluate the efficacy of a new "SmartDraft" feature within our proprietary document editing software. The feature uses a lightweight language model to suggest sentence completions and tone corrections in real-time.
+
+The primary objective was to determine if SmartDraft reduces the time required to draft a standard professional email without compromising the quality of the output.
+
+2. METHODOLOGY
+- Design: Randomized Controlled Trial (RCT).
+- Participants: 400 existing users of the software, stratified by self-reported typing proficiency. (The full dataset is provided in the accompanying CSV).
+- Task: All participants were asked to draft a formal "Apology for Missed Deadline" email based on a provided prompt containing specific facts that needed to be included.
+
+3. EXPERIMENT GROUPS
+- Control Group: Users utilized the standard text editor with basic spell-check only.
+- Treatment Group: Users utilized the text editor with the "SmartDraft" sidebar enabled (predictive text and tone suggestions).
+
+4. MEASUREMENTS & DATA DICTIONARY
+The accompanying CSV file contains the following columns:
+
+- user_id: Unique identifier for the participant.
+- group_assignment: 
+    - "Control": Standard editor.
+    - "Treatment": SmartDraft enabled.
+- typing_speed_wpm: The user's baseline typing speed in Words Per Minute (measured in a pre-test). This is a covariate.
+- task_time_sec: (Primary Metric) The total time in seconds taken from opening the prompt to clicking "Send".
+- quality_score: (Secondary Metric) A score from 0-100 assigned by blind reviewers grading the final email on clarity, tone, and inclusion of required facts.
+- corrections_count: The number of times the user used the backspace key or deleted text (proxy for frustration/errors).
+- satisfaction_rating: Post-task survey response to "How easy was this task?" (Scale 1-10, where 10 is easiest).
+
+OUTCOME MEASURE:
+The primary outcome measure is task_time_sec, which is the time taken to complete the email draft. This is the main metric the experiment was designed to test.
+
+The other ones are secondary outcome measures, which we may or may not use in the analysis:
+- quality_score (Quality of the email)
+- corrections_count (Error/frustration proxy)
+- satisfaction_rating (User sentiment)
+
+5. HYPOTHESES
+- Null Hypothesis (H0): There is no difference in `task_time_sec` between the Control and Treatment groups.
+- Alternative Hypothesis (H1): The Treatment group will have a lower `task_time_sec` than the Control group.
+
+6. NOTES FOR ANALYST
+- Please check for outliers in `task_time_sec`; some users may have left the window open while taking a break.
+- Consider `typing_speed_wpm` as a confounding variable; faster typists might be faster regardless of the tool.
