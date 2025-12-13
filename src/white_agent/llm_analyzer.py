@@ -568,21 +568,130 @@ Keep it concise (3-5 paragraphs).
         """Create a basic analysis plan using heuristics when LLM fails."""
         logger.info("Using fallback heuristic-based analysis plan")
 
-        # Find treatment variable
+        # Find treatment variable with improved heuristics
         treatment_col = None
+        treatment_value = None
+        control_value = None
+
+        # Strategy 1: Look for columns with suggestive names
+        treatment_name_patterns = ['treatment', 'group', 'arm', 'condition', 'assign', 'intervention']
         for col in data.columns:
-            unique_vals = set(data[col].dropna().unique())
-            if len(unique_vals) == 2 and unique_vals.issubset({0, 1, True, False}):
-                treatment_col = col
-                break
+            col_lower = col.lower()
+            if any(pattern in col_lower for pattern in treatment_name_patterns):
+                unique_vals = data[col].dropna().unique()
+                if len(unique_vals) == 2:
+                    treatment_col = col
+                    # Identify which value is treatment vs control
+                    vals_list = list(unique_vals)
+                    # Look for control indicators in values
+                    control_indicators = ['control', 'ctrl', '0', 0, False]
+                    treatment_indicators = ['treatment', 'treat', 'treated', '1', 1, True]
+
+                    for val in vals_list:
+                        val_str = str(val).lower()
+                        # Check for string matches in val_str and direct equality for non-string indicators
+                        for ind in control_indicators:
+                            if (isinstance(ind, str) and ind in val_str) or val == ind:
+                                control_value = val
+                                break
+                        for ind in treatment_indicators:
+                            if (isinstance(ind, str) and ind in val_str) or val == ind:
+                                treatment_value = val
+                                break
+
+                    # If we identified both, we're done
+                    if treatment_value is not None and control_value is not None:
+                        break
+                    # Otherwise assign arbitrarily
+                    if treatment_value is None:
+                        treatment_value = vals_list[1] if control_value == vals_list[0] else vals_list[0]
+                    if control_value is None:
+                        control_value = vals_list[1] if treatment_value == vals_list[0] else vals_list[0]
+                    break
+
+        # Strategy 2: If no name match, look for binary 0/1 or True/False columns
+        if treatment_col is None:
+            for col in data.columns:
+                unique_vals = set(data[col].dropna().unique())
+                if len(unique_vals) == 2 and unique_vals.issubset({0, 1, True, False}):
+                    treatment_col = col
+                    control_value = min(unique_vals)
+                    treatment_value = max(unique_vals)
+                    break
+
+        # Strategy 3: Any binary column as last resort
+        if treatment_col is None:
+            for col in data.columns:
+                unique_vals = data[col].dropna().unique()
+                if len(unique_vals) == 2:
+                    treatment_col = col
+                    vals_list = list(unique_vals)
+                    control_value = vals_list[0]
+                    treatment_value = vals_list[1]
+                    break
 
         # Find outcome variable
         outcome_col = None
-        for col in data.columns:
-            if col != treatment_col and pd.api.types.is_numeric_dtype(data[col]):
-                if data[col].nunique() > 2:
-                    outcome_col = col
+        context_lower = context.lower()
+
+        # Strategy 1: Look for explicit "primary outcome" or "outcome measure" mentions in context
+        # Parse patterns like "primary outcome is X" or "outcome measure is X"
+        import re
+        primary_patterns = [
+            r'primary outcome[^:]*:\s*([a-z_]+)',
+            r'primary outcome[^i]*is\s+([a-z_]+)',
+            r'outcome measure[^:]*:\s*([a-z_]+)',
+            r'outcome measure[^i]*is\s+([a-z_]+)',
+            r'primary metric[^:]*:\s*([a-z_]+)',
+            r'outcome variable[^:]*:\s*([a-z_]+)',
+        ]
+
+        for pattern in primary_patterns:
+            match = re.search(pattern, context_lower)
+            if match:
+                candidate = match.group(1).strip()
+                # Check if this matches a column name
+                for col in data.columns:
+                    if col.lower() == candidate and pd.api.types.is_numeric_dtype(data[col]):
+                        outcome_col = col
+                        break
+                if outcome_col:
                     break
+
+        # Strategy 2: Look for columns with outcome-related names mentioned in context
+        if outcome_col is None:
+            # Score candidate columns by how prominently they appear in context
+            candidates = []
+            for col in data.columns:
+                if col != treatment_col and pd.api.types.is_numeric_dtype(data[col]):
+                    col_lower = col.lower()
+                    # Count occurrences in context
+                    count = context_lower.count(col_lower)
+                    if count > 0 and data[col].nunique() > 2:
+                        candidates.append((col, count))
+
+            # Pick the most mentioned column
+            if candidates:
+                candidates.sort(key=lambda x: x[1], reverse=True)
+                outcome_col = candidates[0][0]
+
+        # Strategy 3: Look for columns with suggestive names
+        if outcome_col is None:
+            outcome_name_patterns = ['outcome', 'result', 'response', 'score', 'time', 'rate', 'count']
+            for col in data.columns:
+                if col != treatment_col and pd.api.types.is_numeric_dtype(data[col]):
+                    col_lower = col.lower()
+                    if any(pattern in col_lower for pattern in outcome_name_patterns) and data[col].nunique() > 2:
+                        outcome_col = col
+                        break
+
+        # Strategy 4: First numeric column that's not treatment and has reasonable variance
+        if outcome_col is None:
+            for col in data.columns:
+                if col != treatment_col and pd.api.types.is_numeric_dtype(data[col]):
+                    if data[col].nunique() > 2:
+                        outcome_col = col
+                        break
 
         # Find covariates
         covariates = []
@@ -601,8 +710,8 @@ Keep it concise (3-5 paragraphs).
                 "column_name": treatment_col,
                 "description": "Treatment indicator",
                 "type": "binary",
-                "treatment_value": 1,
-                "control_value": 0
+                "treatment_value": treatment_value,
+                "control_value": control_value
             },
             "outcome_variable": {
                 "column_name": outcome_col,
