@@ -90,20 +90,20 @@ def example_3_model_configuration():
         print("ERROR: GEMINI_API_KEY environment variable not set")
         return
 
-    # Use faster/cheaper models for data loading, best models for analysis
+    # Use cost-optimized hybrid approach: Gemma for data loading, Gemini 2.5 Flash for analysis
     agent = LLMWhiteAgent(
         inputs_dir="inputs",
         results_dir="results",
         gemini_api_key=api_key,
-        analyzer_model="gemini-1.5-pro",      # Best quality for analysis
-        loader_model="gemini-1.5-flash",       # Fast for data loading
-        report_model="gemini-1.5-pro"          # Best quality for reports
+        analyzer_model="gemini-2.5-flash",    # Fast, high-quality analysis
+        loader_model="gemma-3-12b-it",        # Cost-efficient for data loading
+        report_model="gemini-2.5-flash"       # Fast, high-quality reports
     )
 
-    print("Configured with optimized model selection:")
-    print(f"  Data loading: gemini-1.5-flash (fast, cheap)")
-    print(f"  Analysis: gemini-1.5-pro (best quality)")
-    print(f"  Reports: gemini-1.5-pro (best quality)")
+    print("Configured with hybrid model approach:")
+    print(f"  Data loading: gemma-3-12b-it (cost-efficient)")
+    print(f"  Analysis: gemini-2.5-flash (fast, high quality)")
+    print(f"  Reports: gemini-2.5-flash (fast, high quality)")
 
     print("\nProcessing test_1...")
     results = agent.process_test(test_index=1)

@@ -22,13 +22,13 @@ class LLMDataLoader:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        model_name: str = "gemini-1.5-flash"
+        model_name: str = "gemma-3-12b-it"
     ):
         """Initialize the data loader.
 
         Args:
             api_key: Gemini API key
-            model_name: Gemini model to use (flash for speed)
+            model_name: Model to use (gemma-3-12b-it for speed and cost efficiency)
         """
         self.api_key = api_key
         self.model_name = model_name

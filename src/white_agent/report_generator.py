@@ -18,12 +18,12 @@ logger = logging.getLogger(__name__)
 class ReportGenerator:
     """Generates comprehensive analysis reports using Gemini LLM."""
 
-    def __init__(self, api_key: Optional[str] = None, model_name: str = "gemini-1.5-pro"):
+    def __init__(self, api_key: Optional[str] = None, model_name: str = "gemini-2.5-flash"):
         """Initialize the report generator.
 
         Args:
             api_key: Gemini API key
-            model_name: Gemini model to use
+            model_name: Gemini model to use (gemini-2.5-flash for fast, high-quality reports)
         """
         self.api_key = api_key
         self.model_name = model_name

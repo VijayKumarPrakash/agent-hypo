@@ -38,9 +38,9 @@ class LLMWhiteAgent:
         inputs_dir: str = "inputs",
         results_dir: str = "results",
         gemini_api_key: Optional[str] = None,
-        analyzer_model: str = "gemini-1.5-pro",
-        loader_model: str = "gemini-1.5-flash",
-        report_model: str = "gemini-1.5-pro"
+        analyzer_model: str = "gemini-2.5-flash",
+        loader_model: str = "gemma-3-12b-it",
+        report_model: str = "gemini-2.5-flash"
     ):
         """Initialize the LLM-powered White Agent.
 
@@ -48,9 +48,9 @@ class LLMWhiteAgent:
             inputs_dir: Path to inputs directory
             results_dir: Path to results directory
             gemini_api_key: Gemini API key (defaults to GEMINI_API_KEY env var)
-            analyzer_model: Model for analysis (pro for best quality)
-            loader_model: Model for data loading (flash for speed)
-            report_model: Model for report generation (pro for quality)
+            analyzer_model: Model for analysis (gemini-2.5-flash for fast quality)
+            loader_model: Model for data loading (gemma-3-12b-it for speed/cost)
+            report_model: Model for report generation (gemini-2.5-flash for quality)
         """
         self.inputs_dir = Path(inputs_dir)
         self.results_dir = Path(results_dir)

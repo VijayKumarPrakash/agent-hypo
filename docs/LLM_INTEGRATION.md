@@ -6,14 +6,22 @@ The White Agent uses LLM (Large Language Model) integration to generate comprehe
 
 ## Which LLM Does White Agent Use?
 
-The White Agent uses **Google's Gemini API** (specifically `gemini-1.5-pro`) for generating analysis reports.
+The White Agent uses a **hybrid approach** with multiple models from Google's Gemini API:
 
-### Why Gemini?
+| Component | Model | Purpose |
+|-----------|-------|---------|
+| **Data Loader** | `gemma-3-12b-it` | Fast, cost-efficient data format detection and parsing |
+| **Analyzer** | `gemini-2.5-flash` | Fast, high-quality statistical analysis and variable identification |
+| **Report Generator** | `gemini-2.5-flash` | Fast, comprehensive report generation |
 
-1. **Cost-effective**: Free tier available with generous limits
-2. **Long context window**: Can handle large experimental contexts
-3. **High-quality output**: Excellent at analyzing statistical data
-4. **Easy integration**: Simple Python SDK
+### Why This Hybrid Approach?
+
+1. **Cost-optimized**: Gemma for simple tasks, Gemini Flash for complex reasoning
+2. **Speed-focused**: Latest Gemini 2.5 Flash for fast analysis and reports
+3. **Long context window**: Can handle large experimental contexts
+4. **High-quality output**: Excellent at analyzing statistical data
+5. **Easy integration**: Same Python SDK for all models
+6. **Flexible deployment**: API-based (default) or local Gemma deployment for privacy
 
 ## How LLM Integration Works
 
@@ -24,10 +32,10 @@ The White Agent operates in **two modes**:
 #### 1. LLM-Powered Mode (with Gemini API key)
 
 When a Gemini API key is provided:
-- Uses `gemini-1.5-pro` to analyze results
-- Generates comprehensive, contextual reports
-- Provides nuanced interpretations
-- Suggests specific, tailored recommendations
+- Uses `gemma-3-12b-it` for fast data loading and format detection
+- Uses `gemini-2.5-flash` for statistical analysis and variable identification
+- Uses `gemini-2.5-flash` for comprehensive report generation
+- Provides nuanced interpretations and tailored recommendations
 
 **Location**: [src/white_agent/report_generator.py:78-95](../src/white_agent/report_generator.py)
 
