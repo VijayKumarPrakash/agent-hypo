@@ -301,9 +301,27 @@ Traditional Mode:
         if results.get('experiment_type'):
             print(f"  Experiment type:           {results['experiment_type']}")
         print(f"  Sample size:               {summary['sample_size']}")
-        print(f"  Average Treatment Effect:  {summary['treatment_effect']:.4f}")
-        print(f"  p-value:                   {summary['p_value']:.4f}")
-        print(f"  Statistically significant: {summary['statistically_significant']}")
+
+        # Safely format treatment effect
+        ate = summary.get('treatment_effect')
+        if ate is not None:
+            print(f"  Average Treatment Effect:  {ate:.4f}")
+        else:
+            print(f"  Average Treatment Effect:  N/A")
+
+        # Safely format p-value
+        p_value = summary.get('p_value')
+        if p_value is not None:
+            print(f"  p-value:                   {p_value:.4f}")
+        else:
+            print(f"  p-value:                   N/A")
+
+        # Safely format significance
+        significant = summary.get('statistically_significant')
+        if significant is not None:
+            print(f"  Statistically significant: {significant}")
+        else:
+            print(f"  Statistically significant: N/A")
 
         print(f"\nOutput Files:")
         output_dir = Path(results['output_dir'])

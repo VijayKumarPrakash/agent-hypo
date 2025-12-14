@@ -81,7 +81,10 @@ class LLMAnalyzer:
         # Step 2: Execute statistical analysis based on LLM plan
         results = self._execute_analysis(data, analysis_plan)
 
-        # Step 3: Interpret results using LLM
+        # Step 3: Use LLM to extract key summary statistics from results
+        results = self._extract_summary_statistics(results)
+
+        # Step 4: Interpret results using LLM
         results["interpretation"] = self._interpret_results(
             context, analysis_plan, results
         )
@@ -253,39 +256,57 @@ Return ONLY the JSON object, no additional text.
             treatment_value = plan["treatment_variable"].get("treatment_value")
             control_value = plan["treatment_variable"].get("control_value")
 
-            # Perform analysis based on experiment type and variable types
-            results.update(
-                self._analyze_treatment_effect(
-                    data, treatment_var, outcome_var,
-                    treatment_value, control_value
-                )
-            )
+            # Always perform core statistical analyses
+            # (LLM will later parse these results to extract what's needed)
+            # Use individual try-except blocks so one failure doesn't stop others
 
-            # Additional analyses
-            if "t-test" in plan.get("analysis_methods", []):
+            # 1. Treatment effect analysis
+            try:
+                results.update(
+                    self._analyze_treatment_effect(
+                        data, treatment_var, outcome_var,
+                        treatment_value, control_value
+                    )
+                )
+            except Exception as e:
+                logger.warning(f"Treatment effect analysis failed: {e}")
+
+            # 2. Hypothesis tests (t-test, Mann-Whitney U)
+            try:
                 results.update(
                     self._perform_hypothesis_tests(
                         data, treatment_var, outcome_var,
                         treatment_value, control_value
                     )
                 )
+            except Exception as e:
+                logger.warning(f"Hypothesis tests failed: {e}")
 
-            if "regression" in plan.get("analysis_methods", []):
-                results.update(
-                    self._regression_analysis(
-                        data, treatment_var, outcome_var, plan.get("covariates", [])
+            # 3. Regression analysis (if covariates present)
+            if plan.get("covariates"):
+                try:
+                    results.update(
+                        self._regression_analysis(
+                            data, treatment_var, outcome_var, plan.get("covariates", [])
+                        )
                     )
-                )
+                except Exception as e:
+                    logger.warning(f"Regression analysis failed: {e}")
 
-            if "balance-check" in plan.get("analysis_methods", []):
-                results.update(
-                    self._check_balance(
-                        data, treatment_var, treatment_value, control_value,
-                        plan.get("covariates", [])
+            # 4. Balance check (if covariates present)
+            if plan.get("covariates"):
+                try:
+                    results.update(
+                        self._check_balance(
+                            data, treatment_var, treatment_value, control_value,
+                            plan.get("covariates", [])
+                        )
                     )
-                )
+                except Exception as e:
+                    logger.warning(f"Balance check failed: {e}")
 
-            results["analysis_successful"] = True
+            # Mark as successful if we got the core results
+            results["analysis_successful"] = "average_treatment_effect" in results and "p_value" in results
 
         except Exception as e:
             logger.error(f"Analysis execution failed: {e}")
@@ -420,8 +441,22 @@ Return ONLY the JSON object, no additional text.
         """Perform regression analysis."""
         results = {}
 
+        # Prepare treatment variable (encode categorical to numeric if needed)
+        treatment_data = data[treatment_col].copy()
+        if treatment_data.dtype == 'object' or treatment_data.dtype.name == 'category':
+            # Encode categorical treatment as 0/1
+            unique_vals = treatment_data.unique()
+            if len(unique_vals) == 2:
+                # Binary encoding: map to 0 and 1
+                treatment_encoded = (treatment_data == unique_vals[1]).astype(int)
+            else:
+                logger.warning(f"Treatment variable has {len(unique_vals)} unique values, expected 2")
+                return results
+        else:
+            treatment_encoded = treatment_data
+
         # Simple regression
-        X_simple = data[[treatment_col]].values
+        X_simple = treatment_encoded.values.reshape(-1, 1)
         y = data[outcome_col].values
 
         model_simple = LinearRegression()
@@ -439,8 +474,27 @@ Return ONLY the JSON object, no additional text.
                             if c["column_name"] in data.columns]
 
             if covariate_cols:
+                # Prepare data with encoded treatment and covariates
+                data_for_regression = data[covariate_cols + [outcome_col]].copy()
+                data_for_regression[treatment_col] = treatment_encoded
+
+                # Encode categorical covariates
+                for col in covariate_cols:
+                    if data_for_regression[col].dtype == 'object' or data_for_regression[col].dtype.name == 'category':
+                        # Binary encode categorical variables
+                        unique_vals = data_for_regression[col].unique()
+                        if len(unique_vals) == 2:
+                            data_for_regression[col] = (data_for_regression[col] == unique_vals[1]).astype(int)
+                        else:
+                            # For multiple categories, use one-hot encoding (drop first to avoid multicollinearity)
+                            logger.info(f"One-hot encoding categorical covariate '{col}' with {len(unique_vals)} categories")
+                            dummies = pd.get_dummies(data_for_regression[col], prefix=col, drop_first=True)
+                            data_for_regression = pd.concat([data_for_regression.drop(columns=[col]), dummies], axis=1)
+                            # Update covariate_cols to include dummy columns
+                            covariate_cols = [c for c in covariate_cols if c != col] + list(dummies.columns)
+
                 cols_to_use = [treatment_col] + covariate_cols
-                data_complete = data[cols_to_use + [outcome_col]].dropna()
+                data_complete = data_for_regression[cols_to_use + [outcome_col]].dropna()
 
                 if len(data_complete) > len(cols_to_use):
                     X_multi = data_complete[cols_to_use].values
@@ -488,16 +542,49 @@ Return ONLY the JSON object, no additional text.
 
             if len(control) > 0 and len(treatment) > 0:
                 try:
-                    t_stat, p_value = stats.ttest_ind(treatment, control)
+                    # Check if covariate is categorical
+                    if control.dtype == 'object' or control.dtype.name == 'category':
+                        # For categorical variables, use chi-square test
+                        from scipy.stats import chi2_contingency
 
-                    balance_tests.append({
-                        "variable": col,
-                        "control_mean": float(control.mean()),
-                        "treatment_mean": float(treatment.mean()),
-                        "difference": float(treatment.mean() - control.mean()),
-                        "p_value": float(p_value),
-                        "balanced": bool(p_value > 0.05)
-                    })
+                        # Create contingency table
+                        contingency = pd.crosstab(
+                            data[treatment_col],
+                            data[col]
+                        )
+                        chi2, p_value, dof, expected = chi2_contingency(contingency)
+
+                        # For categorical, report proportions instead of means
+                        control_mode = control.mode()[0] if len(control.mode()) > 0 else control.iloc[0]
+                        treatment_mode = treatment.mode()[0] if len(treatment.mode()) > 0 else treatment.iloc[0]
+                        control_prop = (control == control_mode).mean()
+                        treatment_prop = (treatment == treatment_mode).mean()
+
+                        balance_tests.append({
+                            "variable": col,
+                            "type": "categorical",
+                            "control_mode": str(control_mode),
+                            "treatment_mode": str(treatment_mode),
+                            "control_proportion": float(control_prop),
+                            "treatment_proportion": float(treatment_prop),
+                            "p_value": float(p_value),
+                            "test": "chi-square",
+                            "balanced": bool(p_value > 0.05)
+                        })
+                    else:
+                        # For continuous variables, use t-test
+                        t_stat, p_value = stats.ttest_ind(treatment, control)
+
+                        balance_tests.append({
+                            "variable": col,
+                            "type": "continuous",
+                            "control_mean": float(control.mean()),
+                            "treatment_mean": float(treatment.mean()),
+                            "difference": float(treatment.mean() - control.mean()),
+                            "p_value": float(p_value),
+                            "test": "t-test",
+                            "balanced": bool(p_value > 0.05)
+                        })
                 except Exception as e:
                     logger.warning(f"Could not check balance for {col}: {e}")
 
@@ -512,6 +599,120 @@ Return ONLY the JSON object, no additional text.
             }
 
         return result
+
+    def _extract_summary_statistics(self, results: Dict[str, Any]) -> Dict[str, Any]:
+        """Use LLM to extract key summary statistics from analysis results.
+
+        This method robustly extracts p_value, statistically_significant, and other
+        key fields from the analysis results, avoiding fragile heuristics.
+
+        Args:
+            results: Full analysis results dictionary
+
+        Returns:
+            Updated results dictionary with guaranteed summary fields
+        """
+        if not self.model:
+            # Fallback: try to extract from known fields
+            logger.warning("No LLM available for result parsing, using fallback logic")
+            return self._fallback_extract_summary(results)
+
+        # Prepare results summary for LLM
+        results_json = json.dumps({
+            k: v for k, v in results.items()
+            if k not in ["interpretation"]  # Exclude interpretation to save tokens
+        }, indent=2, default=str)
+
+        prompt = f"""You are a statistical analyst. Extract the key summary statistics from the following analysis results.
+
+# ANALYSIS RESULTS
+{results_json}
+
+# YOUR TASK
+Extract and return a JSON object with these exact fields:
+
+{{
+  "p_value": <the primary p-value for the treatment effect (float, or null if not available)>,
+  "statistically_significant": <true if p-value < 0.05, false otherwise, or null if p-value unavailable>,
+  "average_treatment_effect": <the ATE/treatment effect (float)>,
+  "treatment_effect": <same as average_treatment_effect for compatibility>,
+  "sample_size": <total sample size (int)>
+}}
+
+IMPORTANT RULES:
+1. Look for p-values in order of preference:
+   - "p_value" field at the root level
+   - "t_test" -> "p_value"
+   - "mann_whitney_u_test" -> "p_value"
+   - Any other test's p-value
+2. For average_treatment_effect, look for:
+   - "average_treatment_effect" field
+   - Difference between treatment_mean and control_mean
+3. Return ONLY the JSON object, no other text.
+4. If a value is not available, use null (not 0 or empty string).
+
+Return the JSON now:"""
+
+        try:
+            response = self.model.generate_content(prompt)
+            response_text = response.text.strip()
+
+            # Extract JSON from response
+            if "```json" in response_text:
+                response_text = response_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in response_text:
+                response_text = response_text.split("```")[1].split("```")[0].strip()
+
+            summary = json.loads(response_text)
+
+            # Update results with extracted summary
+            results["p_value"] = summary.get("p_value")
+            results["statistically_significant"] = summary.get("statistically_significant")
+
+            # Ensure we have average_treatment_effect
+            if "average_treatment_effect" not in results and summary.get("average_treatment_effect") is not None:
+                results["average_treatment_effect"] = summary["average_treatment_effect"]
+
+            logger.info(f"Extracted summary: p_value={summary.get('p_value')}, "
+                       f"significant={summary.get('statistically_significant')}, "
+                       f"ate={summary.get('average_treatment_effect')}")
+
+            return results
+
+        except Exception as e:
+            logger.error(f"LLM-based summary extraction failed: {e}, using fallback")
+            return self._fallback_extract_summary(results)
+
+    def _fallback_extract_summary(self, results: Dict[str, Any]) -> Dict[str, Any]:
+        """Fallback method to extract summary statistics without LLM.
+
+        Args:
+            results: Analysis results dictionary
+
+        Returns:
+            Updated results with summary fields
+        """
+        # Try to extract p_value from various sources
+        p_value = None
+
+        # Check direct p_value field
+        if "p_value" in results:
+            p_value = results["p_value"]
+        # Check t_test
+        elif "t_test" in results and isinstance(results["t_test"], dict):
+            p_value = results["t_test"].get("p_value")
+        # Check mann_whitney_u_test
+        elif "mann_whitney_u_test" in results and isinstance(results["mann_whitney_u_test"], dict):
+            p_value = results["mann_whitney_u_test"].get("p_value")
+
+        # Set p_value and significance
+        results["p_value"] = p_value
+        results["statistically_significant"] = bool(p_value < 0.05) if p_value is not None else None
+
+        logger.info(f"Fallback extraction: p_value={p_value}, "
+                   f"significant={results['statistically_significant']}")
+
+        return results
 
     def _interpret_results(
         self,
