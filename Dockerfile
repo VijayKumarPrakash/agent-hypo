@@ -26,19 +26,21 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy Python packages from builder
-COPY --from=builder /root/.local /root/.local
+# Create non-root user for security (do this BEFORE copying files)
+RUN useradd -m -u 1000 agent
+
+# Copy Python packages from builder to the agent user's home
+COPY --from=builder /root/.local /home/agent/.local
 
 # Make sure scripts in .local are usable
-ENV PATH=/root/.local/bin:$PATH
+ENV PATH=/home/agent/.local/bin:$PATH
 
 # Copy application code
 COPY app/ ./app/
 COPY src/ ./src/
 
-# Create non-root user for security
-RUN useradd -m -u 1000 agent && \
-    chown -R agent:agent /app
+# Change ownership to agent user
+RUN chown -R agent:agent /app /home/agent/.local
 
 USER agent
 
