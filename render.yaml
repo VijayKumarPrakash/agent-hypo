@@ -1,0 +1,27 @@
+# Render.com Blueprint
+# This file enables one-click deployment to Render
+
+services:
+  - type: web
+    name: white-agent
+    env: docker
+    region: oregon  # Change to your preferred region
+    plan: free
+    branch: main
+    healthCheckPath: /health
+    envVars:
+      # These will be set via Render dashboard
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: S3_ENDPOINT_URL
+        sync: false
+      - key: S3_PUBLIC_URL_BASE
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: PORT
+        value: 8000

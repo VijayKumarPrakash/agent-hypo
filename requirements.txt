@@ -16,9 +16,16 @@ google-generativeai>=0.3.0
 # Environment variable management
 python-dotenv>=1.0.0
 
-# Web server for A2A protocol (optional, for production deployment)
+# A2A HTTP Service (required for production deployment)
 fastapi>=0.104.0
-uvicorn>=0.24.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+
+# HTTP client for downloading files
+requests>=2.31.0
+
+# Cloud storage (S3-compatible)
+boto3>=1.28.0
 
 # Development and testing
 pytest>=7.4.0
