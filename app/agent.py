@@ -172,7 +172,8 @@ def run_agent(input_payload: Dict[str, Any]) -> Dict[str, Any]:
         FileDownloadError: If downloading input files fails
         AnalysisError: If analysis execution fails
     """
-    run_id = str(uuid.uuid4())
+    # Use fixed run_id to overwrite results each time
+    run_id = "latest"
     logger.info(f"Starting analysis run: {run_id}")
 
     # Extract inputs
@@ -280,37 +281,37 @@ def run_agent(input_payload: Dict[str, Any]) -> Dict[str, Any]:
     try:
         uploader = StorageUploader()
 
-        # Upload report
+        # Upload to report/ folder
         report_url = uploader.upload_text_file(
             text_content=report_markdown,
-            s3_key=f"runs/{run_id}/analysis_report.md",
+            s3_key=f"runs/{run_id}/report/analysis_report.md",
             content_type="text/markdown"
         )
 
-        # Upload results JSON
+        # Upload results JSON to report/ folder
         results_url = uploader.upload_json_file(
             json_content=results_json,
-            s3_key=f"runs/{run_id}/results.json"
+            s3_key=f"runs/{run_id}/report/results.json"
         )
 
-        # Upload analysis code
+        # Upload analysis code to code/ folder
         analysis_code_url = uploader.upload_text_file(
             text_content=analysis_code,
-            s3_key=f"runs/{run_id}/analysis.py",
+            s3_key=f"runs/{run_id}/code/analysis.py",
             content_type="text/x-python"
         )
 
-        # Upload data copy
+        # Upload data copy to data_source/ folder
         data_copy_url = uploader.upload_file(
             file_content=data_content,
-            s3_key=f"runs/{run_id}/data/{data_filename}",
+            s3_key=f"runs/{run_id}/data_source/{data_filename}",
             content_type=get_content_type(data_filename)
         )
 
-        # Upload context copy
+        # Upload context copy to data_source/ folder
         context_copy_url = uploader.upload_file(
             file_content=context_content,
-            s3_key=f"runs/{run_id}/context/{context_filename}",
+            s3_key=f"runs/{run_id}/data_source/{context_filename}",
             content_type=get_content_type(context_filename)
         )
 
