@@ -1,119 +1,158 @@
 # White Agent - RCT Analysis
 
-An autonomous agent for analyzing randomized controlled trials (RCTs) and A/B tests, built for CS 294 and compatible with the AgentBeats platform.
+An autonomous agent for analyzing randomized controlled trials (RCTs) and A/B tests, built for CS 294 and compatible with the A2A (Agent-to-Agent) protocol.
 
 ## Overview
 
-The White Agent is an A2A (Agent-to-Agent) compatible system that performs comprehensive statistical analysis on experimental data. It can be triggered by a Green Agent orchestrator and autonomously analyzes RCT data, generates reports, and provides actionable insights.
+The White Agent performs comprehensive statistical analysis on experimental data. It supports two deployment modes:
+- **A2A HTTP Service**: Cloud-ready stateless API for agent orchestration
+- **Legacy CLI Mode**: Local file-based analysis tool
 
 ### Key Features
 
-- **🤖 LLM-Powered Analysis Mode (NEW!)**: Robust end-to-end analysis that adapts to any data format
-- **📊 Automated Data Analysis**: Processes CSV, JSON, Parquet, Excel, and more
-- **🔬 Comprehensive Statistics**: Calculates ATE, p-values, confidence intervals, effect sizes, and regression models
-- **⚖️ Covariate Balance Checking**: Verifies randomization quality
-- **📝 LLM-Powered Reports**: Uses Gemini API to generate detailed analysis reports
-- **🔄 Reproducible Code**: Automatically generates Python code to reproduce analyses
-- **🔗 A2A Compatible**: Integrates with AgentBeats platform for multi-agent workflows
-- **📁 Version Control**: Maintains multiple analysis versions for the same dataset
+- **LLM-Powered Analysis**: Adapts to any data format with intelligent variable detection
+- **Automated Statistics**: ATE, p-values, confidence intervals, effect sizes, regression analysis
+- **Covariate Balance Checking**: Verifies randomization quality
+- **Reproducible Code**: Generates Python scripts to reproduce analyses
+- **Multiple Data Formats**: CSV, JSON, Parquet, Excel support
+- **A2A Compatible**: Standard A2A protocol with cloud storage integration
+- **Dual Mode**: Auto-detects between LLM mode (with API key) and traditional statistical mode
 
-### 🆕 LLM-Powered Mode
+## Quick Start
 
-The agent now includes an **intelligent LLM-powered mode** that can:
+### A2A Service (Recommended for Production)
 
-- ✅ Work with **any data format** without preprocessing
-- ✅ Handle **inconsistent variable naming** and structures
-- ✅ **Automatically identify** treatment, outcome, and covariate variables
-- ✅ **Adapt statistical methods** to your specific experiment type
-- ✅ Provide **context-aware interpretations** and recommendations
-
-**[📖 Learn more about LLM-powered analysis →](docs/LLM_POWERED_ANALYSIS.md)**
-
-## Installation
-
-### Prerequisites
-
-- Python 3.11 or higher
-- pip package manager
-
-### Setup
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd agent-hypo
-```
-
-2. Install dependencies:
+1. **Install dependencies:**
 ```bash
 pip install -r requirements.txt
 ```
 
-Or install with development tools:
+2. **Configure environment:**
 ```bash
-pip install -r requirements.txt
-pip install -e ".[dev]"
+cp .env.a2a.example .env
+# Edit .env with your S3 credentials and optional Gemini API key
 ```
 
-3. Configure environment variables (optional):
+3. **Run server:**
+```bash
+uvicorn app.server:app --reload
+```
+
+4. **Test it:**
+```bash
+# Visit http://localhost:8000/docs for interactive API
+# Or run: python test_a2a_service.py
+```
+
+See [QUICK_START_A2A.md](QUICK_START_A2A.md) for detailed A2A setup.
+
+### Legacy CLI Mode
+
+1. **Install dependencies:**
+```bash
+pip install -r requirements.txt
+```
+
+2. **Optional - configure Gemini API:**
 ```bash
 cp .env.example .env
-# Edit .env and add your Gemini API key if you want LLM-powered reports
+# Edit .env and add GEMINI_API_KEY for LLM-powered reports
 ```
 
-**Note**: The agent works without an API key - it will use template-based reports instead of LLM-generated ones. See [docs/LLM_INTEGRATION.md](docs/LLM_INTEGRATION.md) for details.
+3. **Run analysis:**
+```bash
+python legacy_main.py
+```
+
+The agent works without an API key using traditional statistical methods.
+
+## Documentation
+
+- **[QUICK_START_A2A.md](QUICK_START_A2A.md)** - 5-minute A2A service setup
+- **[README_A2A.md](README_A2A.md)** - Complete A2A technical documentation
+- **[START_HERE.md](START_HERE.md)** - Deployment guide for cloud platforms
+- **[DEPLOYMENT_STEPS.md](DEPLOYMENT_STEPS.md)** - Step-by-step deployment instructions
+- **[docs/LLM_POWERED_ANALYSIS.md](docs/LLM_POWERED_ANALYSIS.md)** - LLM mode capabilities
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System architecture
+- **[docs/A2A_COMPATIBILITY.md](docs/A2A_COMPATIBILITY.md)** - A2A protocol details
 
 ## Project Structure
 
 ```
 agent-hypo/
-├── inputs/                    # Input test directories
-│   ├── test_1/
-│   │   ├── context.txt       # Experiment description
-│   │   └── data.csv          # Experimental data
-│   ├── test_2/
-│   └── ...
-├── results/                   # Analysis results
-│   ├── result_1_1/
-│   │   ├── data_source/      # Copy of input data
-│   │   ├── code/             # Reproducible analysis code
-│   │   ├── report/           # Analysis reports (MD + JSON)
-│   │   └── metadata.json     # Run metadata
-│   └── ...
-├── src/
-│   ├── white_agent/          # Core agent implementation
-│   │   ├── agent.py          # Main WhiteAgent class
-│   │   ├── analyzer.py       # Statistical analysis
-│   │   ├── data_loader.py    # Data file parsing
-│   │   ├── report_generator.py  # LLM report generation
-│   │   └── utils.py          # Utility functions
-│   └── launcher.py           # AgentBeats launcher
-├── white_agent_card.toml     # AgentBeats configuration
+├── app/                       # A2A HTTP service
+│   ├── server.py             # FastAPI server
+│   ├── agent.py              # Stateless agent logic
+│   ├── models.py             # Request/response schemas
+│   └── storage.py            # S3 cloud storage
+├── src/white_agent/          # Core analysis engine
+│   ├── agent.py              # Traditional WhiteAgent class
+│   ├── llm_agent.py          # LLM-powered agent
+│   ├── unified_agent.py      # Auto-detecting unified interface
+│   ├── analyzer.py           # Statistical methods
+│   ├── llm_analyzer.py       # LLM adaptive analysis
+│   ├── data_loader.py        # Data parsing
+│   └── report_generator.py  # Report generation
+├── inputs/                   # Test data (legacy CLI mode)
+├── results/                  # Analysis outputs (legacy CLI mode)
+├── docs/                     # Technical documentation
+├── examples/                 # Usage examples
+├── legacy_main.py            # CLI entry point
 ├── requirements.txt          # Python dependencies
-└── README.md                 # This file
+├── Dockerfile                # Container definition
+└── .well-known/agent-card.json  # A2A agent card
 ```
 
-## Usage
+## API Usage
 
-### Quick Start with LLM-Powered Mode (Recommended)
-
-The easiest way to use the enhanced LLM-powered analysis:
+### A2A HTTP Service
 
 ```bash
-# Set your Gemini API key
-export GEMINI_API_KEY="your-gemini-api-key"
+# Health check
+curl http://localhost:8000/health
 
-# Analyze the latest test automatically (uses LLM mode if API key is set)
-python main.py
-
-# Analyze a specific test
-python main.py --test-index 1
-
-# List available tests
-python main.py --list
+# Run analysis
+curl -X POST http://localhost:8000/run \
+  -H "Content-Type: application/json" \
+  -d '{
+    "context_url": "https://example.com/context.txt",
+    "data_url": "https://example.com/data.csv",
+    "mode": "auto"
+  }'
 ```
 
-**Without API key**: The agent automatically falls back to traditional analysis mode.
+**Response:**
+```json
+{
+  "status": "success",
+  "run_id": "abc-123",
+  "mode_used": "llm",
+  "analysis_summary": {
+    "sample_size": 1000,
+    "treatment_effect": 0.1234,
+    "p_value": 0.0023,
+    "statistically_significant": true
+  },
+  "outputs": {
+    "report_url": "https://...",
+    "results_url": "https://...",
+    "analysis_code_url": "https://..."
+  }
+}
+```
+
+### Legacy CLI Usage
+
+```bash
+# Analyze latest test
+python legacy_main.py
+
+# Analyze specific test
+python legacy_main.py --test-index 1
+
+# List available tests
+python legacy_main.py --list
+```
 
 ### Programmatic Usage
 
@@ -128,332 +167,98 @@ agent = UnifiedWhiteAgent(
 
 # Process a test
 results = agent.process_test(test_index=1)
-
-# Check which mode was used
 print(f"Using LLM mode: {agent.is_llm_powered}")
 ```
 
 See [examples/llm_mode_example.py](examples/llm_mode_example.py) for more examples.
 
-### Standalone Mode (Interactive)
+## Data Format
 
-Run the agent in standalone mode for development and testing:
+**A2A Service:** Provide URLs to context and data files in the request.
 
-```bash
-python src/launcher.py --mode standalone
-```
+**Legacy CLI:** Place files in `inputs/test_X/` directory:
+- **Context file** (`.txt` or `.md`): Experiment description
+- **Data file** (`.csv`, `.json`, `.parquet`, or `.xlsx`): Must contain:
+  - Binary treatment variable (0/1)
+  - Continuous outcome variable
+  - Optional covariates
 
-Commands:
-- `analyze <test_index>` - Analyze a specific test
-- `status` - Check agent status
-- `reset` - Reset agent state
-- `quit` - Exit
-
-Example:
-```
-> analyze 1
-Analyzing test_1...
-Analysis complete!
-{
-  "test_index": 1,
-  "result_version": 1,
-  "output_dir": "results/result_1_1",
-  ...
-}
-```
-
-### Server Mode (A2A Protocol)
-
-Run as an A2A server for AgentBeats integration:
-
-```bash
-python src/launcher.py --mode server --agent-port 8001
-```
-
-This starts a FastAPI server with the following endpoints:
-- `POST /a2a/analyze` - Process analysis requests
-- `GET /a2a/status` - Check agent status
-- `POST /a2a/reset` - Reset agent state
-- `GET /health` - Health check
-
-### Programmatic Usage
-
-```python
-from white_agent import WhiteAgent
-
-# Initialize agent
-agent = WhiteAgent(
-    inputs_dir="inputs",
-    results_dir="results"
-)
-
-# Process a test
-results = agent.process_test(test_index=1)
-
-print(f"Analysis saved to: {results['output_dir']}")
-print(f"ATE: {results['analysis_summary']['treatment_effect']}")
-print(f"p-value: {results['analysis_summary']['p_value']}")
-```
-
-### A2A Message Protocol
-
-Send A2A messages to the agent:
-
-```python
-# Analyze a test
-response = agent.handle_a2a_message({
-    "action": "analyze_test",
-    "params": {
-        "test_index": 1
-    }
-})
-
-# Check status
-response = agent.handle_a2a_message({
-    "action": "get_status"
-})
-```
-
-## Input Format
-
-Each test should be in a directory named `test_X` (e.g., `test_1`, `test_12`) containing:
-
-1. **Context File** (`.txt` or `.md`):
-   - Description of the experiment
-   - Research question and objectives
-   - Study design details
-   - Treatment and control definitions
-   - Data collection methodology
-
-2. **Data File** (`.csv`, `.json`, `.parquet`, or `.xlsx`):
-   - Must contain a binary treatment variable (0/1)
-   - Must contain a continuous outcome variable
-   - Can include additional covariates
-   - Each row represents one experimental unit
-
-Example data structure:
+Example data:
 ```csv
 treatment,outcome,age,gender
 0,42.3,25,F
 1,45.1,28,M
-0,41.8,22,F
-1,48.2,30,M
-...
 ```
 
 ## Output Format
 
-Results are saved in `results/result_X_Y/` where:
-- `X` is the test index
-- `Y` is the version number (auto-incremented)
+**A2A Service:** Results uploaded to S3 with URLs in response.
 
-Each result directory contains:
+**Legacy CLI:** Results in `results/result_X_Y/`:
+- `data_source/` - Copy of input data
+- `code/analysis.py` - Reproducible analysis script
+- `report/analysis_report.md` - Detailed findings
+- `report/results.json` - Structured results
+- `metadata.json` - Run metadata
 
-### 1. `data_source/`
-Copy of the original data file for reproducibility
+## Statistical Methods
 
-### 2. `code/`
-- `analysis.py` - Reproducible Python script
-- `requirements.txt` - Dependencies for the analysis code
+The agent performs:
+- **Average Treatment Effect (ATE)**: Difference in means with confidence intervals
+- **Hypothesis Testing**: t-tests and Mann-Whitney U tests
+- **Regression Analysis**: Linear regression with/without covariates
+- **Covariate Balance**: Randomization quality checks
+- **Effect Sizes**: Cohen's d calculations
+- **Report Generation**: Executive summary, findings, recommendations
 
-### 3. `report/`
-- `analysis_report.md` - Comprehensive analysis report
-- `results.json` - Structured results data
-
-### 4. `metadata.json`
-Run information and summary statistics
-
-## Statistical Analysis
-
-The agent performs the following analyses:
-
-### 1. Average Treatment Effect (ATE)
-- Difference in means between treatment and control
-- Standard errors and confidence intervals
-- Effect size (Cohen's d)
-
-### 2. Hypothesis Testing
-- Two-sample t-test
-- Mann-Whitney U test (non-parametric)
-- Statistical significance at α=0.05
-
-### 3. Regression Analysis
-- Simple linear regression (outcome ~ treatment)
-- Multiple regression with covariates (if available)
-- R² and coefficient estimates
-
-### 4. Covariate Balance
-- Tests whether randomization achieved balance
-- Reports p-values for each covariate
-- Identifies potential imbalances
-
-### 5. Report Generation
-- Executive summary
-- Detailed findings
-- Threats to validity
-- Practical recommendations
-- Future improvements
-
-## AgentBeats Integration
-
-The White Agent is designed for the AgentBeats platform:
-
-### Configuration
-
-The agent is configured via [white_agent_card.toml](white_agent_card.toml) which specifies:
-- Agent capabilities and role
-- Network endpoints
-- I/O structure
-- LLM settings
-- Analysis parameters
-
-### Running with AgentBeats
-
-```bash
-# Using agentbeats CLI (if installed)
-agentbeats run white_agent_card.toml \
-  --launcher_host 0.0.0.0 \
-  --launcher_port 8000 \
-  --agent_host 0.0.0.0 \
-  --agent_port 8001
-```
-
-### A2A Protocol
-
-The agent implements standard A2A message handling:
-
-**Request:**
-```json
-{
-  "action": "analyze_test",
-  "params": {
-    "test_index": 12
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "status": "success",
-  "results": {
-    "test_index": 12,
-    "result_version": 1,
-    "analysis_summary": {
-      "sample_size": 1000,
-      "treatment_effect": 3.45,
-      "p_value": 0.001,
-      "statistically_significant": true
-    }
-  }
-}
-```
+See [docs/LLM_POWERED_ANALYSIS.md](docs/LLM_POWERED_ANALYSIS.md) for LLM-enhanced analysis capabilities.
 
 ## Configuration
 
-### Environment Variables
-
-- `GEMINI_API_KEY` - API key for Gemini LLM (optional)
-
-### Agent Parameters
-
-When initializing the WhiteAgent:
-- `inputs_dir` - Path to inputs directory (default: "inputs")
-- `results_dir` - Path to results directory (default: "results")
-- `gemini_api_key` - Gemini API key (defaults to env var)
-
-### Analysis Parameters
-
-In the RCTAnalyzer:
-- `alpha` - Significance level (default: 0.05)
-
-## Development
-
-### Running Tests
-
+### Environment Variables (A2A Service)
 ```bash
-pytest tests/
+S3_BUCKET=your-bucket-name
+S3_ACCESS_KEY_ID=your-key
+S3_SECRET_ACCESS_KEY=your-secret
+GEMINI_API_KEY=your-gemini-key  # Optional, for LLM mode
 ```
 
-### Code Formatting
-
+### Environment Variables (Legacy CLI)
 ```bash
-black src/
+GEMINI_API_KEY=your-gemini-key  # Optional, for LLM mode
 ```
 
-### Type Checking
+## Deployment
 
+### Docker
 ```bash
-mypy src/
+docker build -t white-agent .
+docker run -p 8000:8000 --env-file .env white-agent
 ```
 
-### Linting
-
-```bash
-flake8 src/
-```
-
-## Example Workflow
-
-1. **Prepare Input Data**:
-   ```bash
-   mkdir -p inputs/test_1
-   # Add context.txt and data.csv to inputs/test_1/
-   ```
-
-2. **Run Analysis**:
-   ```bash
-   python src/launcher.py --mode standalone
-   > analyze 1
-   ```
-
-3. **Review Results**:
-   ```bash
-   cat results/result_1_1/report/analysis_report.md
-   python results/result_1_1/code/analysis.py
-   ```
-
-4. **Run Again** (creates result_1_2):
-   ```
-   > analyze 1
-   ```
+### Cloud Platforms
+See [START_HERE.md](START_HERE.md) and [DEPLOYMENT_STEPS.md](DEPLOYMENT_STEPS.md) for:
+- Render, Railway, Fly.io
+- AWS ECS/Fargate
+- Google Cloud Run
 
 ## Troubleshooting
 
-### Issue: "No data file found"
-- Ensure your test directory contains a `.csv`, `.json`, `.parquet`, or `.xlsx` file
-- Check that the file has the correct extension
+**"No data file found"**
+- Ensure data file has correct extension (`.csv`, `.json`, `.parquet`, or `.xlsx`)
 
-### Issue: "Could not identify treatment and outcome variables"
-- Verify your data has a binary treatment column (0/1 values)
-- Ensure you have a continuous numeric outcome column
-- Check variable names for keywords like "treatment", "outcome", etc.
+**"Could not identify treatment and outcome variables"**
+- Verify binary treatment column (0/1) and continuous outcome column exist
+- Check variable naming conventions
 
-### Issue: "Gemini API error"
-- Verify `GEMINI_API_KEY` environment variable is set
-- Agent will fall back to template-based reports if LLM is unavailable
+**"Storage/S3 errors"**
+- Verify S3 credentials in `.env`
+- Check bucket permissions and network connectivity
 
-### Issue: "Multiple data files found"
-- Each test directory should contain only one data file
-- Remove or move extra data files
+**"LLM mode not working"**
+- Set `GEMINI_API_KEY` in environment or use `"mode": "traditional"` in requests
+- Agent automatically falls back to traditional mode if LLM unavailable
 
 ## License
 
-MIT License
-
-## Contributing
-
-Contributions are welcome! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Submit a pull request
-
-## Contact
-
-For questions or issues, please open a GitHub issue or contact the maintainers.
-
-## Acknowledgments
-
-Built for CS 294 - Agent-to-Agent Systems
-Compatible with the AgentBeats platform (https://agentbeats.org)
+MIT License - Built for CS 294 (Agent-to-Agent Systems)

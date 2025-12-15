@@ -5,31 +5,15 @@ __pycache__/
 *.so
 .Python
 build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
 *.egg-info/
-.installed.cfg
 *.egg
-MANIFEST
 
 # Virtual environments
 venv/
 env/
 ENV/
-env.bak/
-venv.bak/
-white_agent_venv/
+*.venv/
 
 # IDE
 .vscode/
@@ -43,32 +27,22 @@ white_agent_venv/
 .pytest_cache/
 .coverage
 htmlcov/
-.tox/
-.nox/
-
-# Jupyter
-.ipynb_checkpoints
 
 # Environment variables
 .env
 .env.local
 .env.*
+!.env.example
 !.env.a2a.example
 
-# Results (optional - comment out if you want to track results)
+# Results & outputs
 results/
 
 # Logs
 *.log
 
-# MyPy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Distribution
-*.tar.gz
-*.whl
-
 # AgentBeats runtime
 .ab/
+
+# Claude Code
+.claude/
