@@ -107,7 +107,42 @@ async def root():
         "endpoints": {
             "health": "/health",
             "run_analysis": "/run",
+            "agent_card": "/.well-known/agent-card.json",
             "documentation": "/docs"
+        }
+    }
+
+
+@app.get("/.well-known/agent-card.json", tags=["Status"])
+async def agent_card():
+    """A2A agent card endpoint for agent discovery.
+
+    Returns metadata about this agent's capabilities, endpoints, and schema
+    according to the A2A protocol specification.
+    """
+    import json
+    from pathlib import Path
+
+    card_path = Path(__file__).parent.parent / ".well-known" / "agent-card.json"
+
+    if card_path.exists():
+        with open(card_path) as f:
+            return json.load(f)
+
+    # Fallback inline card if file not found
+    return {
+        "agent": {
+            "name": "White Agent - RCT Analyzer",
+            "version": "1.0.0",
+            "description": "An autonomous agent that performs comprehensive statistical analysis on randomized controlled trial data",
+            "capabilities": {
+                "primary_function": "rct_analysis",
+                "a2a_compatible": True
+            }
+        },
+        "endpoints": {
+            "health": "/health",
+            "run_analysis": "/run"
         }
     }
 
@@ -251,12 +286,14 @@ async def general_exception_handler(request: Request, exc: Exception):
 if __name__ == "__main__":
     import uvicorn
 
-    # Get port from environment or default to 8000
-    port = int(os.getenv("PORT", "8000"))
+    # Get host and port from environment variables
+    # AgentBeats controller sets HOST and AGENT_PORT
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("AGENT_PORT", os.getenv("PORT", "8000")))
 
     uvicorn.run(
         "app.server:app",
-        host="0.0.0.0",
+        host=host,
         port=port,
         log_level="info"
     )

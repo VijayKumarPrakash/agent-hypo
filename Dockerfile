@@ -1,8 +1,8 @@
-# Multi-stage Dockerfile for White Agent A2A service
+# Multi-stage Dockerfile for White Agent with AgentBeats Controller
 # Optimized for production deployment
 
 # Build stage
-FROM python:3.11-slim as builder
+FROM python:3.13-slim as builder
 
 WORKDIR /build
 
@@ -17,13 +17,14 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt
 
 # Runtime stage
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 WORKDIR /app
 
-# Install runtime dependencies only
+# Install runtime dependencies (including bash for run.sh)
 RUN apt-get update && apt-get install -y \
     curl \
+    bash \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for security (do this BEFORE copying files)
@@ -38,22 +39,27 @@ ENV PATH=/home/agent/.local/bin:$PATH
 # Copy application code
 COPY app/ ./app/
 COPY src/ ./src/
+COPY .well-known/ ./.well-known/
+COPY run.sh ./run.sh
+
+# Make run.sh executable
+RUN chmod +x run.sh
 
 # Change ownership to agent user
 RUN chown -R agent:agent /app /home/agent/.local
 
 USER agent
 
-# Expose port
+# Expose port (AgentBeats controller port)
 EXPOSE 8000
 
-# Health check
+# Health check (check controller status)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f http://localhost:8000/status || exit 1
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
 
-# Run the FastAPI server
-CMD ["uvicorn", "app.server:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run the AgentBeats controller
+CMD ["agentbeats", "run_ctrl"]

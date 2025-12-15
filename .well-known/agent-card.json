@@ -1,0 +1,74 @@
+{
+  "agent": {
+    "name": "White Agent - RCT Analyzer",
+    "version": "1.0.0",
+    "description": "An autonomous agent that performs comprehensive statistical analysis on randomized controlled trial data and generates detailed reports",
+    "capabilities": {
+      "primary_function": "rct_analysis",
+      "supported_formats": ["csv", "json", "parquet", "xlsx"],
+      "analysis_types": [
+        "average_treatment_effect",
+        "hypothesis_testing",
+        "regression_analysis",
+        "covariate_balance",
+        "effect_size_calculation"
+      ],
+      "output_types": ["statistical_report", "analysis_code", "data_copy", "metadata"]
+    },
+    "role": {
+      "type": "analyzer",
+      "color": "white",
+      "a2a_compatible": true,
+      "autonomous": true
+    }
+  },
+  "endpoints": {
+    "health": "/health",
+    "run_analysis": "/run"
+  },
+  "schema": {
+    "request": {
+      "type": "object",
+      "properties": {
+        "context_url": {
+          "type": "string",
+          "description": "URL to experiment description/context file"
+        },
+        "data_url": {
+          "type": "string",
+          "description": "URL to experimental data file"
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["auto", "llm", "traditional"],
+          "default": "auto",
+          "description": "Analysis mode"
+        }
+      },
+      "required": ["context_url", "data_url"]
+    },
+    "response": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "analysis_summary": {
+          "type": "object"
+        },
+        "outputs": {
+          "type": "object",
+          "properties": {
+            "report_url": {"type": "string"},
+            "data_url": {"type": "string"},
+            "code_url": {"type": "string"},
+            "metadata_url": {"type": "string"}
+          }
+        }
+      }
+    }
+  }
+}

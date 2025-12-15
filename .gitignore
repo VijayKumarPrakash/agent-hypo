@@ -69,3 +69,6 @@ dmypy.json
 # Distribution
 *.tar.gz
 *.whl
+
+# AgentBeats runtime
+.ab/
