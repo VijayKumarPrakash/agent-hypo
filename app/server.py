@@ -122,27 +122,113 @@ async def agent_card():
     """
     import json
     from pathlib import Path
+    import os
 
-    card_path = Path(__file__).parent.parent / ".well-known" / "agent-card.json"
+    # Try multiple possible locations for the agent card file
+    possible_paths = [
+        Path(__file__).parent.parent / ".well-known" / "agent-card.json",  # Development
+        Path("/app/.well-known/agent-card.json"),  # Docker production
+        Path.cwd() / ".well-known" / "agent-card.json",  # Current working directory
+    ]
 
-    if card_path.exists():
-        with open(card_path) as f:
-            return json.load(f)
+    # Try to load from file first
+    for card_path in possible_paths:
+        if card_path.exists():
+            try:
+                with open(card_path) as f:
+                    return json.load(f)
+            except Exception as e:
+                # Log error but continue to fallback
+                import logging
+                logging.error(f"Failed to load agent card from {card_path}: {e}")
+                continue
 
-    # Fallback inline card if file not found
+    # Fallback: return inline if file not found (shouldn't happen in production)
+    import logging
+    logging.warning("Agent card file not found, using inline fallback")
+
     return {
         "agent": {
             "name": "White Agent - RCT Analyzer",
             "version": "1.0.0",
-            "description": "An autonomous agent that performs comprehensive statistical analysis on randomized controlled trial data",
+            "description": "An autonomous agent that performs comprehensive statistical analysis on randomized controlled trial data and generates detailed reports",
             "capabilities": {
                 "primary_function": "rct_analysis",
-                "a2a_compatible": True
+                "supported_formats": [
+                    "csv",
+                    "json",
+                    "parquet",
+                    "xlsx"
+                ],
+                "analysis_types": [
+                    "average_treatment_effect",
+                    "hypothesis_testing",
+                    "regression_analysis",
+                    "covariate_balance",
+                    "effect_size_calculation"
+                ],
+                "output_types": [
+                    "statistical_report",
+                    "analysis_code",
+                    "data_copy",
+                    "metadata"
+                ]
+            },
+            "role": {
+                "type": "analyzer",
+                "color": "white",
+                "a2a_compatible": True,
+                "autonomous": True
             }
         },
         "endpoints": {
             "health": "/health",
             "run_analysis": "/run"
+        },
+        "schema": {
+            "request": {
+                "type": "object",
+                "properties": {
+                    "context_url": {
+                        "type": "string",
+                        "description": "URL to experiment description/context file"
+                    },
+                    "data_url": {
+                        "type": "string",
+                        "description": "URL to experimental data file"
+                    },
+                    "mode": {
+                        "type": "string",
+                        "enum": ["auto", "llm", "traditional"],
+                        "default": "auto",
+                        "description": "Analysis mode"
+                    }
+                },
+                "required": ["context_url", "data_url"]
+            },
+            "response": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string"
+                    },
+                    "run_id": {
+                        "type": "string"
+                    },
+                    "analysis_summary": {
+                        "type": "object"
+                    },
+                    "outputs": {
+                        "type": "object",
+                        "properties": {
+                            "report_url": {"type": "string"},
+                            "data_url": {"type": "string"},
+                            "code_url": {"type": "string"},
+                            "metadata_url": {"type": "string"}
+                        }
+                    }
+                }
+            }
         }
     }
 
