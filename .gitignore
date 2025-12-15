@@ -29,6 +29,7 @@ env/
 ENV/
 env.bak/
 venv.bak/
+white_agent_venv/
 
 # IDE
 .vscode/
