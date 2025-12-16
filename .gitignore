@@ -14,6 +14,7 @@ venv/
 env/
 ENV/
 *.venv/
+white_agent_venv/
 
 # IDE
 .vscode/
