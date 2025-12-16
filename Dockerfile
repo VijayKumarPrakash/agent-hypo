@@ -40,6 +40,7 @@ ENV PATH=/home/agent/.local/bin:$PATH
 COPY app/ ./app/
 COPY src/ ./src/
 COPY .well-known/ ./.well-known/
+COPY white_agent_card.toml ./white_agent_card.toml
 COPY run.sh ./run.sh
 
 # Make run.sh executable
@@ -48,12 +49,16 @@ RUN chmod +x run.sh
 # Change ownership to agent user
 RUN chown -R agent:agent /app /home/agent/.local
 
+# AgentBeats controller needs to read the white_agent_card.toml
+# Make sure it's readable
+RUN chmod 644 /app/white_agent_card.toml
+
 USER agent
 
-# Expose port (AgentBeats controller port)
+# Expose port (FastAPI server port)
 EXPOSE 8000
 
-# Health check (check controller status)
+# Health check (check controller status endpoint)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/status || exit 1
 
@@ -61,5 +66,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
 
-# Run the AgentBeats controller
+# Run the AgentBeats controller which will proxy to the agent
 CMD ["agentbeats", "run_ctrl"]
