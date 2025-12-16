@@ -40,7 +40,6 @@ ENV PATH=/home/agent/.local/bin:$PATH
 COPY app/ ./app/
 COPY src/ ./src/
 COPY .well-known/ ./.well-known/
-COPY white_agent_card.toml ./white_agent_card.toml
 COPY run.sh ./run.sh
 
 # Make run.sh executable
@@ -48,10 +47,6 @@ RUN chmod +x run.sh
 
 # Change ownership to agent user
 RUN chown -R agent:agent /app /home/agent/.local
-
-# AgentBeats controller needs to read the white_agent_card.toml
-# Make sure it's readable
-RUN chmod 644 /app/white_agent_card.toml
 
 USER agent
 
