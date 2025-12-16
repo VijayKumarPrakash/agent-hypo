@@ -232,7 +232,7 @@ def run_agent(input_payload: Dict[str, Any]) -> Dict[str, Any]:
             # Traditional analysis
             analyzer = RCTAnalyzer()
             analysis_results = analyzer.analyze(data_df, context_text)
-            report_generator = ReportGenerator(gemini_api_key=None)
+            report_generator = ReportGenerator(api_key=None)
 
         logger.info("Analysis completed successfully")
 
