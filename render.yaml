@@ -25,3 +25,8 @@ services:
         sync: false
       - key: PORT
         value: 8000
+      # AgentBeats controller configuration
+      - key: PUBLIC_URL
+        value: https://white-agent.onrender.com
+      - key: HTTPS_ENABLED
+        value: true
