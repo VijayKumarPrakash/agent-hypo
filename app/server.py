@@ -250,6 +250,62 @@ async def health_check():
     )
 
 
+@app.get("/status", tags=["Status"])
+async def status_check():
+    """Status endpoint for AgentBeats controller.
+
+    Returns agent status information that the controller expects.
+    This endpoint is used by AgentBeats to check if the agent is running.
+    """
+    gemini_available = os.getenv("GEMINI_API_KEY") is not None
+    storage_configured = StorageUploader.is_configured()
+
+    return {
+        "status": "healthy",
+        "version": "1.0.0",
+        "service": "White Agent - A2A RCT Analysis",
+        "llm_available": gemini_available,
+        "storage_configured": storage_configured,
+        "agent_running": True
+    }
+
+
+@app.get("/info", tags=["Status"])
+async def info():
+    """Info endpoint for AgentBeats controller.
+
+    Returns detailed information about the agent and controller status.
+    This endpoint is used by AgentBeats to display agent information.
+    """
+    gemini_available = os.getenv("GEMINI_API_KEY") is not None
+    storage_configured = StorageUploader.is_configured()
+    
+    # Get agent port from environment (set by agentbeats controller)
+    agent_port = os.getenv("AGENT_PORT", "8001")
+    host = os.getenv("HOST", "0.0.0.0")
+
+    return {
+        "controller": {
+            "status": "running",
+            "port": int(os.getenv("PORT", "8000"))
+        },
+        "agent": {
+            "status": "running",
+            "port": int(agent_port),
+            "host": host,
+            "name": "White Agent - RCT Analyzer",
+            "version": "1.0.0",
+            "capabilities": {
+                "llm_available": gemini_available,
+                "storage_configured": storage_configured,
+                "a2a_compatible": True
+            }
+        },
+        "running_agents": 1,
+        "maintained_agents": 1
+    }
+
+
 @app.post("/run", response_model=RunResponse, tags=["Analysis"])
 async def run_analysis(request: RunRequest):
     """Run RCT analysis on provided data.

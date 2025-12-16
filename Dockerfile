@@ -40,6 +40,7 @@ ENV PATH=/home/agent/.local/bin:$PATH
 COPY app/ ./app/
 COPY src/ ./src/
 COPY .well-known/ ./.well-known/
+COPY white_agent_card.toml ./white_agent_card.toml
 COPY run.sh ./run.sh
 
 # Make run.sh executable
@@ -62,4 +63,5 @@ ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
 
 # Run the AgentBeats controller
+# The controller will automatically find white_agent_card.toml in the working directory (/app)
 CMD ["agentbeats", "run_ctrl"]
