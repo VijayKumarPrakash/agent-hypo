@@ -24,6 +24,7 @@
   },
   "endpoints": {
     "health": "/health",
+    "status": "/status",
     "run_analysis": "/run"
   },
   "schema": {

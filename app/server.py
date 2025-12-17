@@ -110,6 +110,7 @@ async def root():
         "status": "running",
         "endpoints": {
             "health": "/health",
+            "status": "/status",
             "run_analysis": "/run",
             "agent_card": "/.well-known/agent-card.json",
             "documentation": "/docs"
@@ -252,6 +253,16 @@ async def health_check():
         llm_available=gemini_available,
         storage_configured=storage_configured
     )
+
+
+@app.get("/status", response_model=HealthResponse, tags=["Status"])
+async def status_check():
+    """Status check endpoint (alias for /health).
+
+    This endpoint is used by Render.com and Docker health checks.
+    Returns the same information as /health.
+    """
+    return await health_check()
 
 
 @app.post("/run", response_model=RunResponse, tags=["Analysis"])
