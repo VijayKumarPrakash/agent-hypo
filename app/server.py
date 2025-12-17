@@ -155,6 +155,7 @@ async def agent_card():
     return {
         "name": "White Agent - RCT Analyzer",
         "description": "An autonomous agent that performs comprehensive statistical analysis on randomized controlled trial data and generates detailed reports",
+        "version": "1.0.0",
         "protocol_version": "0.3.0",
         "url": "https://white-agent.onrender.com",
         "preferred_transport": "HTTP+JSON",
