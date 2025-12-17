@@ -1,75 +1,40 @@
 {
-  "agent": {
-    "name": "White Agent - RCT Analyzer",
-    "version": "1.0.0",
-    "description": "An autonomous agent that performs comprehensive statistical analysis on randomized controlled trial data and generates detailed reports",
-    "capabilities": {
-      "primary_function": "rct_analysis",
-      "supported_formats": ["csv", "json", "parquet", "xlsx"],
-      "analysis_types": [
-        "average_treatment_effect",
-        "hypothesis_testing",
-        "regression_analysis",
-        "covariate_balance",
-        "effect_size_calculation"
+  "name": "White Agent - RCT Analyzer",
+  "description": "An autonomous agent that performs comprehensive statistical analysis on randomized controlled trial data and generates detailed reports",
+  "protocol_version": "0.3.0",
+  "url": "https://white-agent.onrender.com",
+  "preferred_transport": "HTTP+JSON",
+  "default_input_modes": [
+    "application/json"
+  ],
+  "default_output_modes": [
+    "application/json"
+  ],
+  "capabilities": {
+    "streaming": false
+  },
+  "skills": [
+    {
+      "name": "rct_analysis",
+      "description": "Performs comprehensive statistical analysis on randomized controlled trial data including average treatment effect, hypothesis testing, regression analysis, covariate balance, and effect size calculation. Supports CSV, JSON, Parquet, and Excel formats.",
+      "tags": [
+        "statistics",
+        "rct",
+        "analysis",
+        "data-science",
+        "hypothesis-testing"
       ],
-      "output_types": ["statistical_report", "analysis_code", "data_copy", "metadata"]
-    },
-    "role": {
-      "type": "analyzer",
-      "color": "white",
-      "a2a_compatible": true,
-      "autonomous": true
+      "examples": [
+        "Analyze this RCT dataset and calculate the average treatment effect",
+        "Run hypothesis testing on my experimental data",
+        "Calculate effect sizes and generate a statistical report"
+      ],
+      "input_modes": [
+        "application/json"
+      ],
+      "output_modes": [
+        "application/json"
+      ]
     }
-  },
-  "endpoints": {
-    "health": "/health",
-    "status": "/status",
-    "run_analysis": "/run"
-  },
-  "schema": {
-    "request": {
-      "type": "object",
-      "properties": {
-        "context_url": {
-          "type": "string",
-          "description": "URL to experiment description/context file"
-        },
-        "data_url": {
-          "type": "string",
-          "description": "URL to experimental data file"
-        },
-        "mode": {
-          "type": "string",
-          "enum": ["auto", "llm", "traditional"],
-          "default": "auto",
-          "description": "Analysis mode"
-        }
-      },
-      "required": ["context_url", "data_url"]
-    },
-    "response": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "type": "string"
-        },
-        "run_id": {
-          "type": "string"
-        },
-        "analysis_summary": {
-          "type": "object"
-        },
-        "outputs": {
-          "type": "object",
-          "properties": {
-            "report_url": {"type": "string"},
-            "data_url": {"type": "string"},
-            "code_url": {"type": "string"},
-            "metadata_url": {"type": "string"}
-          }
-        }
-      }
-    }
-  }
+  ]
 }
