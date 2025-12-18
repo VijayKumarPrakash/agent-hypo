@@ -16,6 +16,7 @@
   },
   "skills": [
     {
+      "id": "rct_analysis",
       "name": "rct_analysis",
       "description": "Performs comprehensive statistical analysis on randomized controlled trial data including average treatment effect, hypothesis testing, regression analysis, covariate balance, and effect size calculation. Supports CSV, JSON, Parquet, and Excel formats.",
       "tags": [

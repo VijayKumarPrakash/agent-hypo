@@ -119,7 +119,7 @@ async def root():
 
 
 @app.get("/.well-known/agent-card.json", tags=["Status"])
-async def agent_card():
+async def agent_card(request: Request):
     """A2A agent card endpoint for agent discovery.
 
     Returns metadata about this agent's capabilities, endpoints, and schema
@@ -136,49 +136,71 @@ async def agent_card():
         Path.cwd() / ".well-known" / "agent-card.json",  # Current working directory
     ]
 
-    # Try to load from file first
+    # Load the agent card from file
+    card_data = None
     for card_path in possible_paths:
         if card_path.exists():
             try:
                 with open(card_path) as f:
-                    return json.load(f)
+                    card_data = json.load(f)
+                    break
             except Exception as e:
                 # Log error but continue to fallback
                 import logging
                 logging.error(f"Failed to load agent card from {card_path}: {e}")
                 continue
 
-    # Fallback: return inline if file not found (shouldn't happen in production)
-    import logging
-    logging.warning("Agent card file not found, using inline fallback")
+    # If no file found, use fallback
+    if not card_data:
+        import logging
+        logging.warning("Agent card file not found, using inline fallback")
+        card_data = {
+            "name": "White Agent - RCT Analyzer",
+            "description": "An autonomous agent that performs comprehensive statistical analysis on randomized controlled trial data and generates detailed reports",
+            "version": "1.0.0",
+            "protocol_version": "0.3.0",
+            "url": "https://white-agent.onrender.com",
+            "preferred_transport": "HTTP+JSON",
+            "default_input_modes": ["application/json"],
+            "default_output_modes": ["application/json"],
+            "capabilities": {
+                "streaming": False
+            },
+            "skills": [
+                {
+                    "id": "rct_analysis",
+                    "name": "rct_analysis",
+                    "description": "Performs comprehensive statistical analysis on randomized controlled trial data including average treatment effect, hypothesis testing, regression analysis, covariate balance, and effect size calculation. Supports CSV, JSON, Parquet, and Excel formats.",
+                    "tags": ["statistics", "rct", "analysis", "data-science", "hypothesis-testing"],
+                    "examples": [
+                        "Analyze this RCT dataset and calculate the average treatment effect",
+                        "Run hypothesis testing on my experimental data",
+                        "Calculate effect sizes and generate a statistical report"
+                    ],
+                    "input_modes": ["application/json"],
+                    "output_modes": ["application/json"]
+                }
+            ]
+        }
 
-    return {
-        "name": "White Agent - RCT Analyzer",
-        "description": "An autonomous agent that performs comprehensive statistical analysis on randomized controlled trial data and generates detailed reports",
-        "version": "1.0.0",
-        "protocol_version": "0.3.0",
-        "url": "https://white-agent.onrender.com",
-        "preferred_transport": "HTTP+JSON",
-        "default_input_modes": ["application/json"],
-        "default_output_modes": ["application/json"],
-        "capabilities": {
-            "streaming": False
-        },
-        "skills": [
-            {
-                "name": "rct_analysis",
-                "description": "Performs comprehensive statistical analysis on randomized controlled trial data including average treatment effect, hypothesis testing, regression analysis, covariate balance, and effect size calculation. Supports CSV, JSON, Parquet, and Excel formats.",
-                "tags": ["statistics", "rct", "analysis", "data-science", "hypothesis-testing"],
-                "examples": [
-                    "Analyze this RCT dataset and calculate the average treatment effect",
-                    "Run hypothesis testing on my experimental data",
-                    "Calculate effect sizes and generate a statistical report"
-                ],
-                "input_modes": ["application/json"],
-                "output_modes": ["application/json"]
-            }
-        ]
-    }
+    # Dynamically set the URL based on the request
+    # Use environment variable if set (for production/AgentBeats), otherwise construct from request
+    cloudrun_host = os.getenv("CLOUDRUN_HOST")
+    if cloudrun_host:
+        # Production deployment - CLOUDRUN_HOST is set in environment
+        # Add protocol if not present
+        if not cloudrun_host.startswith(('http://', 'https://')):
+            https_enabled = os.getenv("HTTPS_ENABLED", "false").lower() == "true"
+            protocol = "https" if https_enabled else "http"
+            card_data["url"] = f"{protocol}://{cloudrun_host}"
+        else:
+            card_data["url"] = cloudrun_host
+    else:
+        # Local development - construct URL from request
+        base_url = str(request.base_url).rstrip('/')
+        card_data["url"] = base_url
+
+    return card_data
 
 
 @app.get("/health", response_model=HealthResponse, tags=["Status"])
