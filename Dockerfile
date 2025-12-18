@@ -53,13 +53,13 @@ USER agent
 # Expose port (FastAPI server port)
 EXPOSE 8000
 
-# Health check (check controller status endpoint)
+# Health check (check agent status endpoint)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/status || exit 1
+    CMD curl -f http://localhost:${PORT:-8000}/status || exit 1
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
 
-# Run the AgentBeats controller which will proxy to the agent
-CMD ["agentbeats", "run_ctrl"]
+# Run the White Agent directly (not the AgentBeats controller)
+CMD ["python", "-m", "uvicorn", "app.server:app", "--host", "0.0.0.0", "--port", "8000"]
